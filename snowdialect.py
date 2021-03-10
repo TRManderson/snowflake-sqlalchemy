@@ -228,10 +228,13 @@ class SnowflakeDialect(default.DefaultDialect):
 
     @reflection.cache
     def _current_database_schema(self, connection, **kw):
-        con = connection.connection
-        return (
-            self.normalize_name(con.database),
-            self.normalize_name(con.schema))
+        # "branches" a connection if one exists, otherwise creates one
+        # branched connections use the same underlying DBAPI but maintain separate references
+        with connection.connect() as sqla_con:
+            dbapi_con = sqla_con.connection
+            return (
+                self.normalize_name(dbapi_con.database),
+                self.normalize_name(dbapi_con.schema))
 
     def _get_default_schema_name(self, connection):
         # NOTE: no cache object is passed here
